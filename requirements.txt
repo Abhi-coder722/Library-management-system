@@ -1,5 +1,5 @@
-flask==2.3.3
-requests==2.31.0
-psycopg2-binary==2.9.3
-lxml==4.9.3
-flask_cors
+flask==2.3.3  # Still compatible with Python 3.12
+requests==2.31.0  # Compatible with Python 3.12
+psycopg2-binary==2.9.9  # Updated to latest compatible version
+lxml==5.1.0  # Latest as of 2025, supports Python 3.12
+flask_cors==4.0.0  # Latest version, compatible with Flask 2.3+
