@@ -1,123 +1,132 @@
 from flask import Flask, render_template, jsonify, request
-import configparser
-import requests
-import logging
 from flask_cors import CORS
+import configparser
+import logging
+import psycopg2
+from psycopg2 import sql
 
+# Initialize the Flask app and enable CORS for all routes
 app = Flask(__name__, static_url_path='/static', static_folder='static')
 CORS(app)
 
-# Configure logging to DEBUG level for detailed logs
+# Configure logging for debugging purposes
 logging.basicConfig(
-    level=logging.DEBUG,  # Changed from INFO to DEBUG
+    level=logging.DEBUG,
     format='%(asctime)s %(levelname)s %(message)s',
-    handlers=[
-        logging.StreamHandler()
-    ]
+    handlers=[logging.StreamHandler()]
 )
 
-# Load the configuration from the config.ini file
+# Load the configuration from config.ini
 config = configparser.ConfigParser()
 config.read('config.ini')
 
-# Get the API key and URL from the configuration
-try:
-    GEMINI_API_KEY = config.get('API', 'GEMINI_API_KEY')
-    GEMINI_API_URL = config.get('API', 'GEMINI_API_URL')
-    logging.info("Gemini API configuration loaded successfully.")
-except Exception as e:
-    logging.error("Error reading config.ini: %s", e)
-    GEMINI_API_KEY = None
-    GEMINI_API_URL = None
+# Database configuration settings from the config.ini
+DB_HOST = config.get('Database', 'DB_HOST', fallback='localhost')
+DB_PORT = config.get('Database', 'DB_PORT', fallback='5432')
+DB_NAME = config.get('Database', 'DB_NAME', fallback='mydatabase')
+DB_USER = config.get('Database', 'DB_USER', fallback='myuser')
+DB_PASSWORD = config.get('Database', 'DB_PASSWORD', fallback='mypassword')
 
-# Route to serve the home page
+logging.info("Database configuration loaded successfully.")
+
+# Function to create and return a database connection
+def get_db_connection():
+    try:
+        conn = psycopg2.connect(
+            host=DB_HOST,
+            port=DB_PORT,
+            database=DB_NAME,
+            user=DB_USER,
+            password=DB_PASSWORD
+        )
+        return conn
+    except Exception as e:
+        logging.error("Error creating database connection: %s", e)
+        raise
+
+# Route to fetch books from the database
+@app.route('/api/books', methods=['GET'])
+def get_books():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM Library;')
+        rows = cursor.fetchall()  # Fetch all records from the Library table
+        cursor.close()
+        conn.close()
+
+        # Format the results as a list of dictionaries
+        books = []
+        for row in rows:
+            books.append({
+                'BookId': row[0],
+                'Title': row[1],
+                'Author': row[2],
+                'Publisher': row[3],
+                'Genre': row[4],
+                'Borrower': row[5],
+                'BorrowDate': row[6],
+                'ReturnDate': row[7],
+                'BorrowState': row[8]
+            })
+
+        return jsonify(books)
+
+    except Exception as e:
+        logging.error("Error fetching data from database: %s", e)
+        return jsonify({'error': str(e)}), 500
+
+# Route to insert data into the library table
+@app.route('/api/data', methods=['POST'])
+def insert_data():
+    data = request.json
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # Check if returnDate is present in the request, decide whether it's a borrow or return
+        if 'ReturnDate' in data:
+            # It's a return, update returnDate and set borrowState to False
+            query = sql.SQL("""
+                UPDATE Library 
+                SET Borrower = NULL, BorrowDate = NULL, ReturnDate = %s, BorrowState = %s 
+                WHERE BookId = %s
+            """)
+            cursor.execute(query, (data['ReturnDate'], False, data['BookId']))
+
+        else:
+            # It's a borrow, update Borrower, BorrowDate and set BorrowState to True
+            query = sql.SQL("""
+                UPDATE Library 
+                SET Borrower = %s, BorrowDate = %s, BorrowState = %s 
+                WHERE BookId = %s
+            """)
+            cursor.execute(query, (data['Borrower'], data['BorrowDate'], True, data['BookId']))
+
+        # Commit the changes
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        return jsonify({'message': 'Data updated successfully'}), 200
+    except Exception as e:
+        logging.error("Error updating data: %s", e)
+        return jsonify({'error': 'Error updating data'}), 500
+
+
+# Route to serve the home page (index.html)
 @app.route('/')
 def home():
     return render_template('index.html')
 
-# Route to serve viewer.html
+# Route to serve the viewer page (viewer.html)
 @app.route('/viewer.html')
 def viewer():
     return render_template('viewer.html')
 
-# API route to fetch description from Gemini API
-@app.route('/api/description', methods=['GET'])
-def get_description():
-    entity_name = request.args.get('name')
-    logging.debug(f"Received request for entity name: {entity_name}")  # Changed to DEBUG
-
-    if not entity_name:
-        logging.warning("Missing entity name in request.")
-        return jsonify({'error': 'Missing entity name'}), 400
-
-    if not GEMINI_API_URL or not GEMINI_API_KEY:
-        logging.error("Gemini API configuration missing.")
-        return jsonify({'error': 'Server configuration error'}), 500
-
-    # Prepare the JSON payload with explicit instructions
-    payload = {
-        "contents": [
-            {
-                "parts": [
-                    {
-                        "text": (
-                            f"Provide a detailed description of '{entity_name}'"
-                            "If it is a book include information about the setting, characters, themes, key concepts, and its influence. "
-                            "Do not include any concluding remarks or questions."
-                            "Do not mention any Note at the end about not including concluding remarks or questions."
-                        )
-                    }
-                ]
-            }
-        ]
-    }
-
-    # Construct the API URL with the API key as a query parameter
-    api_url_with_key = f"{GEMINI_API_URL}?key={GEMINI_API_KEY}"
-
-    headers = {
-        "Content-Type": "application/json"
-    }
-
-    # Log the API URL and payload for debugging
-    logging.debug(f"API URL: {api_url_with_key}")
-    logging.debug(f"Payload: {payload}")
-
-    try:
-        # Make the POST request to the Gemini API
-        response = requests.post(
-            api_url_with_key,  # Include the API key in the URL
-            headers=headers,
-            json=payload,
-            timeout=10  # seconds
-        )
-        logging.debug(f"Gemini API response status: {response.status_code}")  # Changed to DEBUG
-
-        if response.status_code != 200:
-            logging.error(f"Failed to fetch description from Gemini API. Status code: {response.status_code}")
-            logging.error(f"Response content: {response.text}")
-            return jsonify({
-                'error': 'Failed to fetch description from Gemini API',
-                'status_code': response.status_code,
-                'response': response.text
-            }), 500
-
-        response_data = response.json()
-        # Extract the description from the response
-        description = response_data.get('candidates', [{}])[0].get('content', {}).get('parts', [{}])[0].get('text', 'No description available.')
-        logging.debug(f"Fetched description: {description}")  # Changed to DEBUG
-
-        return jsonify({'description': description})
-
-    except requests.exceptions.RequestException as e:
-        logging.error(f"Exception during Gemini API request: {e}")
-        return jsonify({'error': 'Failed to connect to Gemini API', 'message': str(e)}), 500
-    except ValueError as e:
-        logging.error(f"JSON decoding failed: {e}")
-        return jsonify({'error': 'Invalid JSON response from Gemini API', 'message': str(e)}), 500
-    except Exception as e:
-        logging.exception(f"Unexpected error: {e}")
-        return jsonify({'error': 'An unexpected error occurred', 'message': str(e)}), 500
-
 if __name__ == '__main__':
     app.run(debug=True)
+    print("Registered Routes:")
+    for rule in app.url_map.iter_rules():
+        print(rule)
+
