@@ -1,5 +1,6 @@
 # library_management_task
-Basic Library Management System 
+Basic Library Management System entity-model </br></br>
+![image](https://github.com/user-attachments/assets/342f03e3-daff-4931-b4d0-c004897ec592)
 
 ### Steps
 1. Open cmd/terminal and clone the repository (ensure git is installed or use GutHub Desktop)
