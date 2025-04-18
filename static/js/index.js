@@ -30,14 +30,14 @@ window.onload = function () {
 
                 // Populate row with book details
                 row.innerHTML = `<td>${id}</td>
-                                 <td><a href="viewer.html?file=books.xml&id=${id}" target="_blank">${title}</a></td>
-                                 <td>${authorName}</td>
-                                 <td>${publisherName}</td>
-                                 <td>${genreName}</td>
-                                 <td>${isBorrowed ? book.Borrower : ''}</td>
-                                 <td>${isBorrowed ? book.BorrowDate : ''}</td>
-                                 <td>${isBorrowed ? book.ReturnDate : ''}</td>
-                                 <td>${isBorrowed ? 'Borrowed' : 'Available'}</td>`;
+                                <td style="color: black;">${title}</td>
+                                <td>${authorName}</td>
+                                <td>${publisherName}</td>
+                                <td>${genreName}</td>
+                                <td>${isBorrowed ? book.Borrower : ''}</td>
+                                <td>${isBorrowed ? book.BorrowDate : ''}</td>
+                                <td>${isBorrowed ? book.ReturnDate : ''}</td>
+                                <td>${isBorrowed ? 'Borrowed' : 'Available'}</td>`;
                 bookTable.appendChild(row);
 
                 // Populate the appropriate dropdown
@@ -59,7 +59,55 @@ window.onload = function () {
         .catch(error => {
             console.error('Error:', error);
         });
-
+    
+        document.getElementById('addBookForm').addEventListener('submit', function (event) {
+            event.preventDefault();
+        
+            const bookId = document.getElementById('bookId').value.trim();  // Book ID (e.g., B0001)
+            const title = document.getElementById('title').value.trim();    // Title of the book
+            const author = document.getElementById('author').value.trim();  // Author name
+            const publisher = document.getElementById('publisher').value.trim(); // Publisher name
+            const genre = document.getElementById('genre').value.trim();    // Genre of the book
+        
+            if (!bookId || !title || !author || !publisher || !genre) {
+                alert('Please fill in all required fields.');
+                return;
+            }
+        
+            const newBookData = {
+                BookId: bookId,
+                Title: title,
+                Author: author,
+                Publisher: publisher,
+                Genre: genre,
+                Borrower: '',    // Leave Borrower empty
+                BorrowDate: null, // BorrowDate is null when the book is not borrowed
+                ReturnDate: null, // ReturnDate is null when the book is not borrowed
+                BorrowState: false // Book is available
+            };
+        
+            // Send data to backend to add the book
+            fetch('/api/add_book', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newBookData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message) {
+                    alert('Book added successfully!');
+                    // Optionally clear the form
+                    document.getElementById('addBookForm').reset();
+                } else {
+                    alert('Error adding book: ' + data.error);
+                }
+            })
+            .catch(error => {
+                alert('Failed to add book. Please try again.');
+                console.error('Error:', error);
+            });
+        });
+    
     // Handle Borrow Form Submission
     document.getElementById('borrowForm').addEventListener('submit', function (event) {
         event.preventDefault();

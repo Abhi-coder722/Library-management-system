@@ -50,7 +50,7 @@ def get_books():
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        cursor.execute('SELECT * FROM Library;')
+        cursor.execute('SELECT * FROM Library ORDER BY BookID;')
         rows = cursor.fetchall()  # Fetch all records from the Library table
         cursor.close()
         conn.close()
@@ -113,6 +113,46 @@ def insert_data():
         logging.error("Error updating data: %s", e)
         return jsonify({'error': 'Error updating data'}), 500
 
+
+@app.route('/api/add_book', methods=['POST'])
+def add_book():
+    try:
+        data = request.json  # Get the data from the request
+
+        # Extract the details of the book from the request body
+        book_id = data.get('BookId')
+        title = data.get('Title')
+        author = data.get('Author')
+        publisher = data.get('Publisher')
+        genre = data.get('Genre')
+        borrower = data.get('Borrower', "")  # Default to None if not provided
+        borrow_date = data.get('BorrowDate', "")  # Default to None if not provided
+        return_date = data.get('ReturnDate', "")  # Default to None if not provided
+        borrow_state = data.get('BorrowState', "Available")  # Book is available by default
+
+        # Establish a database connection
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # Insert the new book into the database
+        query = sql.SQL("""
+            INSERT INTO Library (BookId, Title, Author, Publisher, Genre, Borrower, BorrowDate, ReturnDate, BorrowState)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """)
+
+        cursor.execute(query, (book_id, title, author, publisher, genre, borrower, borrow_date, return_date, borrow_state))
+
+        # Commit the changes
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        # Return a success response
+        return jsonify({'message': 'Book added successfully!'}), 200
+
+    except Exception as e:
+        logging.error("Error adding book: %s", str(e))
+        return jsonify({'error': str(e)}), 500
 
 # Route to serve the home page (index.html)
 @app.route('/')
