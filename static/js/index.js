@@ -37,7 +37,7 @@ window.onload = function () {
                                  <td>${isBorrowed ? book.Borrower : ''}</td>
                                  <td>${isBorrowed ? book.BorrowDate : ''}</td>
                                  <td>${isBorrowed ? book.ReturnDate : ''}</td>
-                                 <td>${isBorrowed ? 'Borrowed' : 'Present'}</td>`;
+                                 <td>${isBorrowed ? 'Borrowed' : 'Available'}</td>`;
                 bookTable.appendChild(row);
 
                 // Populate the appropriate dropdown
