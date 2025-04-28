@@ -155,14 +155,12 @@ window.onload = function () {
                 return;
             }
 
-            // Update the table to clear borrowing details and set status to "Present"
-            row.cells[5].textContent = '';  // Clear Borrower Name
-            row.cells[6].textContent = '';  // Clear Borrow Date
-            row.cells[7].textContent = '';  // Clear Return Date
-            row.cells[8].textContent = 'Present';  // Update Status to "Present"
+            
+            row.cells[5].textContent = '';  
+            row.cells[6].textContent = '';  
+            row.cells[7].textContent = ''; 
+            row.cells[8].textContent = 'Present';  
             row.classList.remove('borrowed');
-
-            // Send data to backend to update database (remove borrower details and set status to "Present")
             fetch('/api/data', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
