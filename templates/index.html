@@ -9,7 +9,26 @@
 </head>
 
 <body>
+    
     <div class="container">
+        <div class="forms-container" id="loginSectionForm">
+            <div class="form-container">
+            <h2>Login</h2>
+            <form id="loginForm" autocomplete="off">
+                <label for="username">User ID:</label>
+                <input type="text" id="username" autocomplete="new-password" required>
+        
+                <label for="password">Password:</label>
+                <input type="text" id="password" autocomplete="new-password" required>
+        
+                <button type="submit">Login</button>
+            </form>
+        </div>
+        </div>
+        <div id="userInfo" style="display: none; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #333;">
+            Logged in as: <span id="currentUser"></span>
+            <button id="logoutBtn">Logout</button>
+        </div>
         <h1>Book Catalog</h1>
         <table>
             <thead>
@@ -39,11 +58,10 @@
                     <label for="borrowBookId">Book:</label>
                     <select id="borrowBookId" required>
                         <option value="">Select a Book</option>
-                        <!-- Options will be populated dynamically -->
                     </select>
 
-                    <label for="borrowerName">Borrower's Name:</label>
-                    <input type="text" id="borrowerName" required>
+                    <!-- <label for="borrowerName">Borrower's Name:</label>
+                    <input type="text" id="borrowerName" required> -->
 
                     <label for="borrowDate">Borrow Date:</label>
                     <input type="date" id="borrowDate" required>
@@ -68,12 +86,40 @@
                     <button type="submit">Return Book</button>
                 </form>
             </div>
-        </div>
+
+            <div class="form-container" id="bookformaddition" style="display: none;">
+                <h2>Add New Book</h2>
+                <form id="addBookForm">
+                    <label for="bookId">Book ID:</label>
+                    <input type="text" id="bookId" autocomplete="off" required>
+            
+                    <label for="title">Title:</label>
+                    <input type="text" id="title" autocomplete="off" required>
+            
+                    <label for="author">Author:</label>
+                    <input type="text" id="author" autocomplete="off" required>
+            
+                    <label for="publisher">Publisher:</label>
+                    <input type="text" id="publisher" autocomplete="off" required>
+            
+                    <label for="genre">Genre:</label>
+                    <input type="text" id="genre" autocomplete="off" required>
+            
+                    <!-- Borrow state will always be Available when adding a new book -->
+                    <input type="hidden" id="borrowState" value="Available">
+            
+                    <!-- Borrow and Return dates will be empty for newly added books -->
+                    <input type="hidden" id="borrowDate" value="">
+                    <input type="hidden" id="returnDate" value="">
+            
+                    <button type="submit">Add Book</button>
+                </form>
+            </div>
 
         <!-- Clear Data Button -->
-        <div class="form-container">
+        <!-- <div class="form-container">
             <button id="clearDataBtn">Clear All Borrowing Data</button>
-        </div>
+        </div> -->
     </div>
 
     <!-- Link to External JS -->

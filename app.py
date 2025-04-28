@@ -50,7 +50,7 @@ def get_books():
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        cursor.execute('SELECT * FROM Library;')
+        cursor.execute('SELECT * FROM Library ORDER BY BookID;')
         rows = cursor.fetchall()  # Fetch all records from the Library table
         cursor.close()
         conn.close()
@@ -77,6 +77,41 @@ def get_books():
         return jsonify({'error': str(e)}), 500
 
 # Route to insert data into the library table
+# @app.route('/api/data', methods=['POST'])
+# def insert_data():
+#     data = request.json
+#     try:
+#         conn = get_db_connection()
+#         cursor = conn.cursor()
+
+#         # Check if returnDate is present in the request, decide whether it's a borrow or return
+#         if 'ReturnDate' in data:
+#             # It's a return, update returnDate and set borrowState to False
+#             query = sql.SQL("""
+#                 UPDATE Library 
+#                 SET Borrower = NULL, BorrowDate = NULL, ReturnDate = %s, BorrowState = %s 
+#                 WHERE BookId = %s
+#             """)
+#             cursor.execute(query, (data['ReturnDate'], False, data['BookId']))
+
+#         else:
+#             # It's a borrow, update Borrower, BorrowDate and set BorrowState to True
+#             query = sql.SQL("""
+#                 UPDATE Library 
+#                 SET Borrower = %s, BorrowDate = %s, BorrowState = %s 
+#                 WHERE BookId = %s
+#             """)
+#             cursor.execute(query, (data['Borrower'], data['BorrowDate'], True, data['BookId']))
+
+#         # Commit the changes
+#         conn.commit()
+#         cursor.close()
+#         conn.close()
+
+#         return jsonify({'message': 'Data updated successfully'}), 200
+#     except Exception as e:
+#         logging.error("Error updating data: %s", e)
+#         return jsonify({'error': 'Error updating data'}), 500
 @app.route('/api/data', methods=['POST'])
 def insert_data():
     data = request.json
@@ -95,10 +130,10 @@ def insert_data():
             cursor.execute(query, (data['ReturnDate'], False, data['BookId']))
 
         else:
-            # It's a borrow, update Borrower, BorrowDate and set BorrowState to True
+            # It's a borrow, update Borrower, BorrowDate, and set BorrowState to True
             query = sql.SQL("""
                 UPDATE Library 
-                SET Borrower = %s, BorrowDate = %s, BorrowState = %s 
+                SET Borrower = %s, BorrowDate = %s, BorrowState = %s, ReturnDate = NULL 
                 WHERE BookId = %s
             """)
             cursor.execute(query, (data['Borrower'], data['BorrowDate'], True, data['BookId']))
@@ -114,6 +149,46 @@ def insert_data():
         return jsonify({'error': 'Error updating data'}), 500
 
 
+@app.route('/api/add_book', methods=['POST'])
+def add_book():
+    try:
+        data = request.json  # Get the data from the request
+
+        # Extract the details of the book from the request body
+        book_id = data.get('BookId')
+        title = data.get('Title')
+        author = data.get('Author')
+        publisher = data.get('Publisher')
+        genre = data.get('Genre')
+        borrower = data.get('Borrower', "")  # Default to None if not provided
+        borrow_date = data.get('BorrowDate', "")  # Default to None if not provided
+        return_date = data.get('ReturnDate', "")  # Default to None if not provided
+        borrow_state = data.get('BorrowState', "Available")  # Book is available by default
+
+        # Establish a database connection
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # Insert the new book into the database
+        query = sql.SQL("""
+            INSERT INTO Library (BookId, Title, Author, Publisher, Genre, Borrower, BorrowDate, ReturnDate, BorrowState)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """)
+
+        cursor.execute(query, (book_id, title, author, publisher, genre, borrower, borrow_date, return_date, borrow_state))
+
+        # Commit the changes
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        # Return a success response
+        return jsonify({'message': 'Book added successfully!'}), 200
+
+    except Exception as e:
+        logging.error("Error adding book: %s", str(e))
+        return jsonify({'error': str(e)}), 500
+
 # Route to serve the home page (index.html)
 @app.route('/')
 def home():
@@ -123,6 +198,35 @@ def home():
 @app.route('/viewer.html')
 def viewer():
     return render_template('viewer.html')
+
+
+import json
+import os
+
+# Path to users.json
+USER_FILE = 'users.json'
+
+# Login route
+@app.route('/api/login', methods=['POST'])
+def login():
+    credentials = request.json
+    username = credentials.get('username')
+    password = credentials.get('password')
+
+    try:
+        with open(USER_FILE, 'r') as f:
+            users = json.load(f)
+
+        for user in users:
+            if user['userid'] == username and user['password'] == password:
+                return jsonify({'message': 'Login successful', 'role': user['role']}), 200
+
+        return jsonify({'error': 'Invalid credentials'}), 401
+
+    except Exception as e:
+        logging.error("Login error: %s", e)
+        return jsonify({'error': 'Internal server error'}), 500
+
 
 if __name__ == '__main__':
     app.run(debug=True)
