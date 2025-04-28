@@ -1,17 +1,17 @@
 [{
-  userID:"admin1",
-  password:"adminpassword",
-  role:"admin"
+  "userID":"admin1",
+  "password":"adminpassword",
+  "role":"admin"
 },
   {
-  userID:"user1",
-  password:"userpassword1",
-  role:"user"
+  "userID":"user1",
+  "password":"userpassword1",
+  "role":"user"
   },
 {
-  userID:"user2",
-  password:"userpassword2",
-  role:"user"
+  "userID":"user2",
+  "password":"userpassword2",
+  "role":"user"
   },
 
 ]
