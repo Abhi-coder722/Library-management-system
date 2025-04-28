@@ -50,7 +50,7 @@ CREATE TABLE Library (
 );
 ```
 
-then insert
+then insert values 
 ```
 INSERT INTO Library (BookId, Title, Author, Publisher, Genre, Borrower, BorrowDate, ReturnDate, BorrowState)
 VALUES
