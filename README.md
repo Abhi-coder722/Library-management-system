@@ -34,7 +34,7 @@ http://localhost:5000 # Most probably
 ```
 
 
-Type in SQL Prompt
+Type in SQL Prompt as a query
 ```
 CREATE TABLE Library (
     BookId char(5),
